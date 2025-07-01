@@ -1,8 +1,19 @@
 local love = require("love")
 local anim8 = require("libraries/anim8")
-local sti = require("libraries/sti/")
 
 function love.load()
+	love.graphics.setDefaultFilter("nearest", "nearest")
+	background = love.graphics.newImage("assets/background/background1.png")
+	background_scroll = 0
+	bg_speed = 30
+
+	ground = love.graphics.newImage("assets/background/ground.png")
+	groundH = ground:getHeight()
+	ground_scroll = 0
+	g_speed = 60
+
+	windowW, windowH = love.graphics.getDimensions()
+
 	player = love.graphics.newImage("assets/player/StyleBird1/AllBird1.png")
 	player:setFilter("nearest", "nearest")
 	playerx = 50
@@ -13,31 +24,18 @@ function love.load()
 	gravity = 900
 	local grid = anim8.newGrid(16, 16, player:getWidth(), player:getHeight())
 	animation = anim8.newAnimation(grid("1-4", 1), 0.1)
-	background = love.graphics.newImage("assets/background/background1.png")
-	background:setFilter("nearest", "nearest")
-	local bgwidth = background:getWidth()
-	local bgheight = background:getHeight()
+	bgwidth, bgheight = background:getDimensions()
+	gwidth, gheight = ground:getDimensions()
 
 	bgscaleX = 800 / bgwidth
 	bgscaleY = 600 / bgheight
-
-	map = sti("maps/ground.lua", { "box2d" })
-	world = love.physics.newWorld(0, 0)
-	map:box2d_init(world)
-	-- map.layers.solid.visible = false
-	pipes = {}
-	pipes.topx = 100
-	pipes.topy = 50
-	pipes.gap = 100
-	pipes.bottomx = 100
-	pipes.bottomy = 150
 end
 
 function love.update(dt)
 	animation:update(dt)
 
-	map:update(dt)
-	world:update(dt)
+	background_scroll = (background_scroll + bg_speed * dt)
+	ground_scroll = (ground_scroll + g_speed * dt)
 	playerx = playerx + xvel * dt
 	yvel = yvel + gravity * dt
 	playery = playery + yvel * dt
@@ -45,12 +43,17 @@ end
 function love.keypressed(key)
 	if key == "space" then
 		yvel = jump
+	elseif key == "escape" then
+		love.event.quit()
 	end
 end
 function love.draw()
-	love.graphics.draw(background, 0, 0, 0, bgscaleX, bgscaleY)
-	map:draw(0, 0, 2, 2)
+	for i = -(background_scroll % bgwidth), windowW, bgwidth do
+		love.graphics.draw(background, i, 0, 0, bgscaleX, bgscaleY)
+	end
+	for i = -(ground_scroll % gwidth), windowW, gwidth do
+		love.graphics.draw(ground, i, windowH - groundH)
+	end
 
 	animation:draw(player, playerx, playery, 0, 3, 3)
-	map:box2d_draw()
 end
