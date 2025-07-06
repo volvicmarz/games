@@ -1,7 +1,14 @@
 local love = require("love")
 local anim8 = require("libraries/anim8")
+class = require("class")
+require("Pipe")
+require("PipePair")
 
+local pipePairs = {}
+local timer = 0
+local lastY = -pipe_height + math.random(80) + 20
 function love.load()
+	math.randomseed(os.time())
 	love.graphics.setDefaultFilter("nearest", "nearest")
 	background = love.graphics.newImage("assets/background/background1.png")
 	background_scroll = 0
@@ -39,7 +46,25 @@ function love.update(dt)
 	playerx = playerx + xvel * dt
 	yvel = yvel + gravity * dt
 	playery = playery + yvel * dt
+
+	timer = timer + dt
+	if timer > 2 then
+		local y = math.max(-pipe_height + 10, math.min(lastY + math.random(-20, 20), windowH - 90 - pipe_height))
+		lastY = y
+		table.insert(pipePairs, PipePair(y))
+		timer = 0
+	end
+	for k, pair in pairs(pipePairs) do
+		pair:update(dt)
+	end
+
+	for k, pair in pairs(pipePairs) do
+		if pair.remove then
+			table.remove(pipePairs, k)
+		end
+	end
 end
+
 function love.keypressed(key)
 	if key == "space" then
 		yvel = jump
@@ -50,6 +75,9 @@ end
 function love.draw()
 	for i = -(background_scroll % bgwidth), windowW, bgwidth do
 		love.graphics.draw(background, i, 0, 0, bgscaleX, bgscaleY)
+	end
+	for k, pair in pairs(pipePairs) do
+		pair:render()
 	end
 	for i = -(ground_scroll % gwidth), windowW, gwidth do
 		love.graphics.draw(ground, i, windowH - groundH)
